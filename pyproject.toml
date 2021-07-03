@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "tgfeed"
-version = "0.1.0"
-description = ""
+version = "0.0.1"
+description = "Create feeds in Telegram easily"
 authors = ["Nikolai <magnickolas@gmail.com>"]
 
 [tool.poetry.dependencies]
