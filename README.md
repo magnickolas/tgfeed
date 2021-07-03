@@ -10,10 +10,16 @@ User-application for [Telegram][tg] to create feeds from the given lists of chat
 
 Create a folder with the name starting with \* (e.g. \*cat_memes) and put there all the channels to collect posts from.
 
-### Install and run the application
+### Install the application
 
 ```console
 pip install tgfeed 
+```
+### Run
+
+```console
+# Sample app_id and app_hash, you should normally use your own
+export APP_ID=611335 APP_HASH=d524b414d21f4d37f08684c1df41ac9c
 python -m tgfeed
 ```
 
