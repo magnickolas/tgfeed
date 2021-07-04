@@ -4,11 +4,11 @@ from telethon.tl.types import Channel as TGChannel
 
 
 @dataclass
-class Chat:
+class ChatInfo:
     forwarded_offset: int = 0
 
 
 @dataclass
 class Feed:
     tg_channel: TGChannel
-    chats: dict[int, Chat] = field(default_factory=dict)
+    hash_to_chat_info: dict[int, ChatInfo] = field(default_factory=dict)
