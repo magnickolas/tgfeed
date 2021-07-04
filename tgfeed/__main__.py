@@ -8,9 +8,7 @@ from loguru import logger
 from telethon import TelegramClient
 from telethon.tl.functions.channels import CreateChannelRequest
 from telethon.tl.functions.messages import GetDialogFiltersRequest
-from telethon.tl.types import Channel
-from telethon.tl.types import Chat as TGChat
-from telethon.tl.types import Message, Updates
+from telethon.tl.types import Channel, Message, TypeInputPeer, Updates
 
 from tgfeed import config
 from tgfeed.scheme import ChatInfo, Feed
@@ -24,11 +22,13 @@ async def create_feed(feed_title: str) -> Feed:
     return Feed(tg_channel=create_channel_updates.chats[0])  # type: ignore
 
 
-async def get_new_chat_messages(chat_info: ChatInfo, tg_chat: TGChat) -> list[Message]:
+async def get_new_chat_messages(
+    chat_info: ChatInfo, peer: TypeInputPeer
+) -> list[Message]:
     limit = None if chat_info.forwarded_offset else config.INITIAL_FORWARD_CHAT_LIMIT
     chat_messages = []
     async for message in client.iter_messages(
-        tg_chat, limit=limit, min_id=chat_info.forwarded_offset
+        peer, limit=limit, min_id=chat_info.forwarded_offset
     ):
         chat_messages.append(message)
     if chat_messages:
@@ -44,6 +44,9 @@ async def forward_messages_to_channel(
 
 
 async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
+    subscribed_dialogs = []
+    async for dialog in client.iter_dialogs():
+        subscribed_dialogs.append(dialog.input_entity)
     for dialog_filter in await client(GetDialogFiltersRequest()):
         if dialog_filter.title.startswith(config.FOLDER_FEED_PREFIX):
             feed_title = dialog_filter.title.removeprefix(config.FOLDER_FEED_PREFIX)
@@ -52,13 +55,14 @@ async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
             feed = title_to_feed[feed_title]
             channel = feed.tg_channel
             messages = []
-            for tg_chat in chain(
-                dialog_filter.pinned_peers, dialog_filter.include_peers
+            for peer in filter(
+                lambda x: x in subscribed_dialogs,
+                chain(dialog_filter.pinned_peers, dialog_filter.include_peers),
             ):
-                chat_info = feed.hash_to_chat_info.setdefault(
-                    tg_chat.access_hash, ChatInfo()
+                chat_info = feed.peer_to_chat_info.setdefault(
+                    peer.to_json(), ChatInfo()
                 )
-                messages += await get_new_chat_messages(chat_info, tg_chat)
+                messages += await get_new_chat_messages(chat_info, peer)
             await forward_messages_to_channel(messages, channel)
 
 
