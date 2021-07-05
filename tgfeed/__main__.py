@@ -26,11 +26,9 @@ async def get_new_chat_messages(
     chat_info: ChatInfo, peer: TypeInputPeer
 ) -> list[Message]:
     limit = None if chat_info.forwarded_offset else config.INITIAL_FORWARD_CHAT_LIMIT
-    chat_messages = []
-    async for message in client.iter_messages(
+    chat_messages = await client.get_messages(
         peer, limit=limit, min_id=chat_info.forwarded_offset
-    ):
-        chat_messages.append(message)
+    )
     if chat_messages:
         chat_info.forwarded_offset = max(map(lambda x: x.id, chat_messages))
     return chat_messages
