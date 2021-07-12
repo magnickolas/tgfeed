@@ -8,7 +8,7 @@ from loguru import logger
 from telethon import TelegramClient
 from telethon.tl.functions.channels import CreateChannelRequest
 from telethon.tl.functions.messages import GetDialogFiltersRequest
-from telethon.tl.types import Channel, Message, TypeInputPeer, Updates
+from telethon.tl.types import Channel, Message, TypeDialogFilter, TypeInputPeer, Updates
 
 from tgfeed import config
 from tgfeed.scheme import ChatInfo, Feed
@@ -45,6 +45,7 @@ async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
     subscribed_dialogs = []
     async for dialog in client.iter_dialogs():
         subscribed_dialogs.append(dialog.input_entity)
+    dialog_filter: TypeDialogFilter
     for dialog_filter in await client(GetDialogFiltersRequest()):
         if dialog_filter.title.startswith(config.FOLDER_FEED_PREFIX):
             feed_title = dialog_filter.title.removeprefix(config.FOLDER_FEED_PREFIX)
@@ -53,12 +54,13 @@ async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
             feed = title_to_feed[feed_title]
             channel = feed.tg_channel
             messages = []
+            peer: TypeInputPeer
             for peer in filter(
                 lambda x: x in subscribed_dialogs,
                 chain(dialog_filter.pinned_peers, dialog_filter.include_peers),
             ):
                 chat_info = feed.peer_to_chat_info.setdefault(
-                    peer.to_json(), ChatInfo()
+                    peer.to_json() or peer.stringify(), ChatInfo()
                 )
                 messages += await get_new_chat_messages(chat_info, peer)
             await forward_messages_to_channel(messages, channel)
