@@ -12,3 +12,4 @@ class ChatInfo:
 class Feed:
     tg_channel: TGChannel
     peer_to_chat_info: dict[str, ChatInfo] = field(default_factory=dict)
+    sent_posts_ids: set[int] = field(default_factory=set)

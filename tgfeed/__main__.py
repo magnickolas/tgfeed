@@ -15,6 +15,10 @@ from tgfeed.scheme import ChatInfo, Feed
 
 
 async def create_feed(feed_title: str) -> Feed:
+    if config.USE_EXISTING_CHANNEL:
+        async for dialog in client.iter_dialogs():
+            if dialog.name == feed_title:
+                return Feed(tg_channel=dialog.entity)
     logger.info(f"creating a new feed channel '{feed_title}'")
     create_channel_updates: Updates = await client(
         CreateChannelRequest(feed_title, "")
@@ -25,13 +29,16 @@ async def create_feed(feed_title: str) -> Feed:
 async def get_new_chat_messages(
     chat_info: ChatInfo, peer: TypeInputPeer
 ) -> list[Message]:
-    limit = None if chat_info.forwarded_offset else config.INITIAL_FORWARD_CHAT_LIMIT
+    limit = (
+        None
+        if chat_info.forwarded_offset == 0
+        else max(1, config.INITIAL_FORWARD_CHAT_LIMIT)
+    )
     chat_messages = await client.get_messages(
         peer, limit=limit, min_id=chat_info.forwarded_offset
     )
-    if chat_messages:
-        chat_info.forwarded_offset = max(map(lambda x: x.id, chat_messages))
-    return chat_messages
+    chat_info.forwarded_offset = max(map(lambda x: x.id, chat_messages))
+    return chat_messages[: config.INITIAL_FORWARD_CHAT_LIMIT]
 
 
 async def forward_messages_to_channel(
@@ -39,6 +46,21 @@ async def forward_messages_to_channel(
 ) -> None:
     messages = sorted(messages, key=lambda x: x.date or datetime.now())
     await client.forward_messages(channel, messages)
+
+
+def deduplicate_feed_messages(messages: list[Message], feed: Feed) -> list[Message]:
+    deduplicated_messages = []
+    for message in messages:
+        if (
+            message.fwd_from is None
+            or message.fwd_from.channel_post not in feed.sent_posts_ids
+        ):
+            deduplicated_messages.append(message)
+            if message.fwd_from is not None:
+                post_id = message.fwd_from.channel_post
+                if post_id is not None:
+                    feed.sent_posts_ids.add(post_id)
+    return deduplicated_messages
 
 
 async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
@@ -63,6 +85,8 @@ async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
                     peer.to_json() or peer.stringify(), ChatInfo()
                 )
                 messages += await get_new_chat_messages(chat_info, peer)
+            if config.IGNORE_DUPLICATE_POSTS:
+                messages = deduplicate_feed_messages(messages, feed)
             await forward_messages_to_channel(messages, channel)
 
 

@@ -13,7 +13,7 @@ Create a folder with the name starting with \* (e.g. \*cat_memes) and put there 
 ### Install the application
 
 ```console
-pip install tgfeed 
+pip install tgfeed
 ```
 ### Run
 
@@ -42,14 +42,16 @@ Tgfeed will create a private channel and periodically forward the new posts to i
 
 ## Environment variables
 
-|                       Name | Type | Info                                                             | Required |                Default value                 |
-| --------------------------:|:----:| ---------------------------------------------------------------- |:--------:|:--------------------------------------------:|
-|                     APP_ID | int  | [Telegram API][tg_api]                                           |    +     |                                              |
-|                   APP_HASH | str  | [Telegram API][tg_api]                                           |    +     |                                              |
-|         FOLDER_FEED_PREFIX | str  | The prefix of folders for feeds                                  |    -     |                      *                       |
-|                     DB_DIR | str  | Location for persistent storage                                  |    -     | [User data dir] (e.g. ~/.local/share/tgfeed) |
-| INITIAL_FORWARD_CHAT_LIMIT | int  | Amount of messages to take from new chats the time they're added |    -     |                      10                      |
-|              POLL_INTERVAL | int  | How often to update feeds (in seconds)                           |    -     |                      5                       |
+|                       Name | Type | Info                                                                    | Required |                Default value                 |
+| --------------------------:|:----:| ----------------------------------------------------------------------- |:--------:|:--------------------------------------------:|
+|                     APP_ID | int  | [Telegram API][tg_api]                                                  |    +     |                                              |
+|                   APP_HASH | str  | [Telegram API][tg_api]                                                  |    +     |                                              |
+|         FOLDER_FEED_PREFIX | str  | The prefix of folders for feeds                                         |    -     |                      *                       |
+|                     DB_DIR | str  | Location for persistent storage                                         |    -     | [User data dir] (e.g. ~/.local/share/tgfeed) |
+| INITIAL_FORWARD_CHAT_LIMIT | int  | Amount of messages to take from new chats the time they're added        |    -     |                      1                       |
+|              POLL_INTERVAL | int  | How often to update feeds (in seconds)                                  |    -     |                      5                       |
+|       USE_EXISTING_CHANNEL | bool | Whether to use existing channel with the approptiate name to forward to |    -     |                    False                     |
+|     IGNORE_DUPLICATE_POSTS | bool | Ignore duplicate posts from channels                                    |    -     |                     True                     |
 
 
 [tg]: https://telegram.org/
