@@ -68,3 +68,7 @@ USE_EXISTING_CHANNEL: bool = __get(
 IGNORE_DUPLICATE_POSTS: bool = __get(
     "IGNORE_DUPLICATE_POSTS", value_type=bool, default=True
 )
+# Remove forwarded header from posts
+REMOVE_FORWARDED_HEADER: bool = __get(
+    "REMOVE_FORWARDED_HEADER", value_type=bool, default=False
+)

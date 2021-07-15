@@ -31,7 +31,7 @@ async def get_new_chat_messages(
 ) -> list[Message]:
     limit = (
         None
-        if chat_info.forwarded_offset == 0
+        if chat_info.forwarded_offset != 0
         else max(1, config.INITIAL_FORWARD_CHAT_LIMIT)
     )
     chat_messages = await client.get_messages(
@@ -46,7 +46,11 @@ async def forward_messages_to_channel(
     messages: list[Message], channel: Channel
 ) -> None:
     messages = sorted(messages, key=lambda x: x.date or datetime.now())
-    await client.forward_messages(channel, messages)
+    if config.REMOVE_FORWARDED_HEADER:
+        for message in messages:
+            await client.send_message(channel, message)
+    else:
+        await client.forward_messages(channel, messages)
 
 
 def deduplicate_feed_messages(messages: list[Message], feed: Feed) -> list[Message]:
