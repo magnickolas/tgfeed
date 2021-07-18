@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Tuple
 
 from telethon.tl.types import Channel as TGChannel
 
@@ -12,4 +13,4 @@ class ChatInfo:
 class Feed:
     tg_channel: TGChannel
     peer_to_chat_info: dict[str, ChatInfo] = field(default_factory=dict)
-    sent_posts_ids: set[int] = field(default_factory=set)
+    sent_posts_ids: set[Tuple[int, int]] = field(default_factory=set)

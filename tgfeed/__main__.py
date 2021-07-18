@@ -8,7 +8,14 @@ from loguru import logger
 from telethon import TelegramClient
 from telethon.tl.functions.channels import CreateChannelRequest
 from telethon.tl.functions.messages import GetDialogFiltersRequest
-from telethon.tl.types import Channel, Message, TypeDialogFilter, TypeInputPeer, Updates
+from telethon.tl.types import (
+    Channel,
+    Message,
+    PeerChannel,
+    TypeDialogFilter,
+    TypeInputPeer,
+    Updates,
+)
 
 from tgfeed import config
 from tgfeed.scheme import ChatInfo, Feed
@@ -56,15 +63,19 @@ async def forward_messages_to_channel(
 def deduplicate_feed_messages(messages: list[Message], feed: Feed) -> list[Message]:
     deduplicated_messages = []
     for message in messages:
-        if (
-            message.fwd_from is None
-            or message.fwd_from.channel_post not in feed.sent_posts_ids
-        ):
+        if message.fwd_from is None:
             deduplicated_messages.append(message)
-            if message.fwd_from is not None:
-                post_id = message.fwd_from.channel_post
-                if post_id is not None:
-                    feed.sent_posts_ids.add(post_id)
+        else:
+            post_id = message.fwd_from.channel_post
+            peer_from = message.fwd_from.from_id
+            if post_id is not None and peer_from is PeerChannel:
+                chan_id = peer_from.channel_id
+                post = (chan_id, post_id)
+                if post not in feed.sent_posts_ids:
+                    feed.sent_posts_ids.add(post)
+                    deduplicated_messages.append(message)
+            else:
+                deduplicated_messages.append(message)
     return deduplicated_messages
 
 
