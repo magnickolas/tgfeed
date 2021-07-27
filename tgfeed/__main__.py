@@ -1,7 +1,7 @@
 import shelve
 from asyncio import sleep
 from datetime import datetime
-from itertools import chain
+from itertools import chain, groupby
 from pathlib import Path
 
 from loguru import logger
@@ -18,6 +18,7 @@ from telethon.tl.types import (
 )
 
 from tgfeed import config
+from tgfeed.message import AbstractMessage, GroupedMessage, SimpleMessage
 from tgfeed.scheme import ChatInfo, Feed
 
 
@@ -38,9 +39,9 @@ async def get_new_chat_messages(
 ) -> list[Message]:
     is_initial_forward = chat_info.forwarded_offset == 0
     limit = max(1, config.INITIAL_FORWARD_CHAT_LIMIT) if is_initial_forward else None
-    chat_messages = await client.get_messages(
-        peer, limit=limit, min_id=chat_info.forwarded_offset
-    )
+    chat_messages = (
+        await client.get_messages(peer, limit=limit, min_id=chat_info.forwarded_offset)
+    )[::-1]
     if chat_messages:
         chat_info.forwarded_offset = max(map(lambda x: x.id, chat_messages))
     if is_initial_forward:
@@ -48,13 +49,24 @@ async def get_new_chat_messages(
     return chat_messages
 
 
+def remove_message_headers(messages: list[Message]) -> list[AbstractMessage]:
+    transformed_messages = list[AbstractMessage]()
+    for grouped_id, grouped_messages in groupby(messages, lambda x: x.grouped_id):
+        if grouped_id is None:
+            transformed_messages.extend(map(SimpleMessage, grouped_messages))
+        else:
+            transformed_messages.append(GroupedMessage(list(grouped_messages)))
+    return transformed_messages
+
+
 async def forward_messages_to_channel(
     messages: list[Message], channel: Channel
 ) -> None:
     messages = sorted(messages, key=lambda x: x.date or datetime.now())
     if config.REMOVE_FORWARDED_HEADER:
-        for message in messages:
-            await client.send_message(channel, message)
+        transformed_messages = remove_message_headers(messages)
+        for message in transformed_messages:
+            await message.send(client, channel)
     else:
         await client.forward_messages(channel, messages)
 
