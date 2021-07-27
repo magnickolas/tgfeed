@@ -36,17 +36,16 @@ async def create_feed(feed_title: str) -> Feed:
 async def get_new_chat_messages(
     chat_info: ChatInfo, peer: TypeInputPeer
 ) -> list[Message]:
-    limit = (
-        None
-        if chat_info.forwarded_offset != 0
-        else max(1, config.INITIAL_FORWARD_CHAT_LIMIT)
-    )
+    is_initial_forward = chat_info.forwarded_offset == 0
+    limit = max(1, config.INITIAL_FORWARD_CHAT_LIMIT) if is_initial_forward else None
     chat_messages = await client.get_messages(
         peer, limit=limit, min_id=chat_info.forwarded_offset
     )
     if chat_messages:
         chat_info.forwarded_offset = max(map(lambda x: x.id, chat_messages))
-    return chat_messages[: config.INITIAL_FORWARD_CHAT_LIMIT]
+    if is_initial_forward:
+        chat_messages = chat_messages[: config.INITIAL_FORWARD_CHAT_LIMIT]
+    return chat_messages
 
 
 async def forward_messages_to_channel(
@@ -68,7 +67,7 @@ def deduplicate_feed_messages(messages: list[Message], feed: Feed) -> list[Messa
         else:
             post_id = message.fwd_from.channel_post
             peer_from = message.fwd_from.from_id
-            if post_id is not None and peer_from is PeerChannel:
+            if post_id is not None and isinstance(peer_from, PeerChannel):
                 chan_id = peer_from.channel_id
                 post = (chan_id, post_id)
                 if post not in feed.sent_posts_ids:
