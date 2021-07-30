@@ -1,7 +1,7 @@
 import shelve
 from asyncio import sleep
 from datetime import datetime
-from itertools import chain, groupby
+from itertools import chain
 from pathlib import Path
 
 from loguru import logger
@@ -18,7 +18,7 @@ from telethon.tl.types import (
 )
 
 from tgfeed import config
-from tgfeed.message import AbstractMessage, GroupedMessage, SimpleMessage
+from tgfeed.message import remove_message_headers
 from tgfeed.scheme import ChatInfo, Feed
 
 
@@ -49,16 +49,6 @@ async def get_new_chat_messages(
     return chat_messages
 
 
-def remove_message_headers(messages: list[Message]) -> list[AbstractMessage]:
-    transformed_messages = list[AbstractMessage]()
-    for grouped_id, grouped_messages in groupby(messages, lambda x: x.grouped_id):
-        if grouped_id is None:
-            transformed_messages.extend(map(SimpleMessage, grouped_messages))
-        else:
-            transformed_messages.append(GroupedMessage(list(grouped_messages)))
-    return transformed_messages
-
-
 async def forward_messages_to_channel(
     messages: list[Message], channel: Channel
 ) -> None:
@@ -75,7 +65,14 @@ def deduplicate_feed_messages(messages: list[Message], feed: Feed) -> list[Messa
     deduplicated_messages = []
     for message in messages:
         if message.fwd_from is None:
-            deduplicated_messages.append(message)
+            post_id = message.id
+            peer_from = message.peer_id
+            if post_id is not None and isinstance(peer_from, PeerChannel):
+                chan_id = peer_from.channel_id
+                post = (chan_id, post_id)
+                if post not in feed.sent_posts_ids:
+                    feed.sent_posts_ids.add(post)
+                    deduplicated_messages.append(message)
         else:
             post_id = message.fwd_from.channel_post
             peer_from = message.fwd_from.from_id
