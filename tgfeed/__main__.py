@@ -1,9 +1,10 @@
-import shelve
+import json
 from asyncio import sleep
 from datetime import datetime
 from itertools import chain
 from pathlib import Path
 
+import jsonpickle
 from loguru import logger
 from telethon import TelegramClient
 from telethon.tl.functions.channels import CreateChannelRequest
@@ -20,6 +21,7 @@ from telethon.tl.types import (
 from tgfeed import config
 from tgfeed.message import remove_message_headers
 from tgfeed.scheme import ChatInfo, Feed
+from tgfeed.utils import open_atomic
 
 
 async def create_feed(feed_title: str) -> Feed:
@@ -87,7 +89,7 @@ def deduplicate_feed_messages(messages: list[Message], feed: Feed) -> list[Messa
     return deduplicated_messages
 
 
-async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
+async def update_feeds(title_to_feed: dict[str, str]) -> None:
     subscribed_dialogs = []
     async for dialog in client.iter_dialogs():
         subscribed_dialogs.append(dialog.input_entity)
@@ -96,8 +98,9 @@ async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
         if dialog_filter.title.startswith(config.FOLDER_FEED_PREFIX):
             feed_title = dialog_filter.title.removeprefix(config.FOLDER_FEED_PREFIX)
             if feed_title not in title_to_feed:
-                title_to_feed[feed_title] = await create_feed(feed_title)
-            feed = title_to_feed[feed_title]
+                feed = await create_feed(feed_title)
+                title_to_feed[feed_title] = jsonpickle.encode(feed)  # type: ignore
+            feed: Feed = jsonpickle.decode(title_to_feed[feed_title])  # type: ignore
             channel = feed.tg_channel
             messages = []
             peer: TypeInputPeer
@@ -111,17 +114,25 @@ async def update_feeds(title_to_feed: dict[str, Feed]) -> None:
                 messages += await get_new_chat_messages(chat_info, peer)
             if config.IGNORE_DUPLICATE_POSTS:
                 messages = deduplicate_feed_messages(messages, feed)
+            title_to_feed[feed_title] = jsonpickle.encode(feed)  # type: ignore
             await forward_messages_to_channel(messages, channel)
 
 
 async def main() -> None:
     (db_dir := Path(config.DB_DIR)).mkdir(exist_ok=True)
-    db_path = str(db_dir / "data")
+    db_path = db_dir / "data.db"
     while True:
         logger.info("updating feed...")
-        with shelve.open(db_path, writeback=True) as shelf:
-            shelf.setdefault("feeds", dict[str, Feed]())
-            await update_feeds(shelf["feeds"])
+        if db_path.exists():
+            db_json = json.load(open(db_path, "r"))
+        else:
+            db_json = dict()
+        feeds = db_json.setdefault("feeds", dict[str, str]())
+        await update_feeds(feeds)
+
+        with open_atomic(db_path, "w") as f:
+            json.dump(db_json, f)
+
         await sleep(config.POLL_INTERVAL)
 
 

@@ -9,6 +9,7 @@ python = "^3.9"
 Telethon = "^1.22.0"
 appdirs = "^1.4.4"
 loguru = "^0.5.3"
+jsonpickle = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.910"
