@@ -40,7 +40,15 @@ def remove_message_headers(messages: list[Message]) -> list[AbstractMessage]:
     transformed_messages = list[AbstractMessage]()
     for grouped_id, grouped_messages in groupby(messages, lambda x: x.grouped_id):
         if grouped_id is None:
-            transformed_messages.extend(map(SimpleMessage, grouped_messages))
+            transformed_messages.extend(
+                map(
+                    SimpleMessage,
+                    filter(
+                        lambda x: getattr(x, "message", None) is not None,
+                        grouped_messages,
+                    ),
+                )
+            )
         else:
             transformed_messages.append(GroupedMessage(list(grouped_messages)))
     return transformed_messages
