@@ -72,3 +72,7 @@ IGNORE_DUPLICATE_POSTS: bool = __get(
 REMOVE_FORWARDED_HEADER: bool = __get(
     "REMOVE_FORWARDED_HEADER", value_type=bool, default=False
 )
+# Mark channels as read after forwarding
+MARK_CHANNELS_AS_READ: bool = __get(
+    "MARK_CHANNELS_AS_READ", value_type=bool, default=True
+)

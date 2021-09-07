@@ -7,7 +7,7 @@ from pathlib import Path
 import jsonpickle
 from loguru import logger
 from telethon import TelegramClient
-from telethon.tl.functions.channels import CreateChannelRequest
+from telethon.tl.functions.channels import CreateChannelRequest, ReadHistoryRequest
 from telethon.tl.functions.messages import GetDialogFiltersRequest
 from telethon.tl.types import (
     Channel,
@@ -49,6 +49,10 @@ async def get_new_chat_messages(
     if is_initial_forward:
         chat_messages = chat_messages[: config.INITIAL_FORWARD_CHAT_LIMIT]
     return chat_messages
+
+
+async def mark_chat_as_read(peer: TypeInputPeer) -> None:
+    await client(ReadHistoryRequest(peer, 0))  # type: ignore
 
 
 async def forward_messages_to_channel(
@@ -112,6 +116,8 @@ async def update_feeds(title_to_feed: dict[str, str]) -> None:
                     peer.to_json() or peer.stringify(), ChatInfo()
                 )
                 messages += await get_new_chat_messages(chat_info, peer)
+                if config.MARK_CHANNELS_AS_READ:
+                    await mark_chat_as_read(peer)
             if config.IGNORE_DUPLICATE_POSTS:
                 messages = deduplicate_feed_messages(messages, feed)
             title_to_feed[feed_title] = jsonpickle.encode(feed)  # type: ignore
