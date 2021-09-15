@@ -12,6 +12,10 @@ class AbstractMessage(ABC):
     async def send(self, client: TelegramClient, entity: EntityLike):
         ...
 
+    @abstractmethod
+    def get_caption(self) -> str:
+        ...
+
 
 @dataclass
 class SimpleMessage(AbstractMessage):
@@ -20,20 +24,26 @@ class SimpleMessage(AbstractMessage):
     async def send(self, client: TelegramClient, entity: EntityLike):
         await client.send_message(entity, self.message)
 
+    def get_caption(self) -> str:
+        return self.message.message
+
 
 @dataclass
 class GroupedMessage(AbstractMessage):
     messages: list[Message] = field(default_factory=list)
 
     async def send(self, client: TelegramClient, entity: EntityLike):
+        await client.send_file(
+            entity, file=self.messages, caption=self.get_caption()  # type: ignore
+        )
+
+    def get_caption(self) -> str:
         caption = ""
         for msg in self.messages:
             if msg.message:
                 caption = msg.message
                 break
-        await client.send_file(
-            entity, file=self.messages, caption=caption  # type: ignore
-        )
+        return caption
 
 
 def remove_message_headers(messages: list[Message]) -> list[AbstractMessage]:

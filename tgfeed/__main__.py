@@ -55,6 +55,11 @@ async def mark_chat_as_read(peer: TypeInputPeer) -> None:
     await client(ReadHistoryRequest(peer, 0))  # type: ignore
 
 
+def is_potential_advertisement(text: str) -> bool:
+    potential_link = "t.me/" in text
+    return potential_link
+
+
 async def forward_messages_to_channel(
     messages: list[Message], channel: Channel
 ) -> None:
@@ -62,6 +67,10 @@ async def forward_messages_to_channel(
     if config.REMOVE_FORWARDED_HEADER:
         transformed_messages = remove_message_headers(messages)
         for message in transformed_messages:
+            if config.IGNORE_ADVERTISEMENT and is_potential_advertisement(
+                message.get_caption()
+            ):
+                continue
             await message.send(client, channel)
     else:
         await client.forward_messages(channel, messages)

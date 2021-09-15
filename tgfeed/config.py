@@ -76,3 +76,7 @@ REMOVE_FORWARDED_HEADER: bool = __get(
 MARK_CHANNELS_AS_READ: bool = __get(
     "MARK_CHANNELS_AS_READ", value_type=bool, default=True
 )
+# Ignore messages with potential advertisement
+IGNORE_ADVERTISEMENT: bool = __get(
+    "IGNORE_ADVERTISEMENT", value_type=bool, default=False
+)
