@@ -1,4 +1,5 @@
 import json
+import re
 from asyncio import sleep
 from datetime import datetime
 from itertools import chain
@@ -56,8 +57,9 @@ async def mark_chat_as_read(peer: TypeInputPeer) -> None:
 
 
 def is_potential_advertisement(text: str) -> bool:
-    potential_link = "t.me/" in text
-    return potential_link
+    has_link = "t.me/" in text
+    has_reference = bool(re.search(r"@\w+", text))
+    return has_link or has_reference
 
 
 async def forward_messages_to_channel(
