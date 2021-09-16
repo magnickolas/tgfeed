@@ -25,7 +25,7 @@ class SimpleMessage(AbstractMessage):
         await client.send_message(entity, self.message)
 
     def get_caption(self) -> str:
-        return self.message.message
+        return self.message.text
 
 
 @dataclass
@@ -41,7 +41,7 @@ class GroupedMessage(AbstractMessage):
         caption = ""
         for msg in self.messages:
             if msg.message:
-                caption = msg.message
+                caption = msg.text
                 break
         return caption
 
