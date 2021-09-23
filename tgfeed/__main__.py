@@ -59,7 +59,8 @@ async def mark_chat_as_read(peer: TypeInputPeer) -> None:
 def is_potential_advertisement(text: str) -> bool:
     has_link = "t.me/" in text
     has_reference = bool(re.search(r"@\w+", text))
-    return has_link or has_reference
+    has_card_number = bool(re.search(r"((\d{4}\s*){4})", text))
+    return has_link or has_reference or has_card_number
 
 
 async def forward_messages_to_channel(
