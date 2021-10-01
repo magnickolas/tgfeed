@@ -1,5 +1,4 @@
 import json
-import re
 from asyncio import sleep
 from datetime import datetime
 from itertools import chain
@@ -23,6 +22,7 @@ from tgfeed import config
 from tgfeed.message import remove_message_headers
 from tgfeed.scheme import ChatInfo, Feed
 from tgfeed.utils import open_atomic
+from tgfeed.validate import is_potential_advertisement
 
 
 async def create_feed(feed_title: str) -> Feed:
@@ -56,13 +56,6 @@ async def mark_chat_as_read(peer: TypeInputPeer) -> None:
     await client(ReadHistoryRequest(peer, 0))  # type: ignore
 
 
-def is_potential_advertisement(text: str) -> bool:
-    has_link = "t.me/" in text
-    has_reference = bool(re.search(r"@\w+", text))
-    has_card_number = bool(re.search(r"((\d{4}\s*){4})", text))
-    return has_link or has_reference or has_card_number
-
-
 async def forward_messages_to_channel(
     messages: list[Message], channel: Channel
 ) -> None:
@@ -70,6 +63,7 @@ async def forward_messages_to_channel(
     if config.REMOVE_FORWARDED_HEADER:
         transformed_messages = remove_message_headers(messages)
         for message in transformed_messages:
+            print(getattr(message, "message"))
             if config.IGNORE_ADVERTISEMENT and is_potential_advertisement(
                 message.get_caption()
             ):
