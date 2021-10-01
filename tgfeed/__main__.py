@@ -63,7 +63,6 @@ async def forward_messages_to_channel(
     if config.REMOVE_FORWARDED_HEADER:
         transformed_messages = remove_message_headers(messages)
         for message in transformed_messages:
-            print(getattr(message, "message"))
             if config.IGNORE_ADVERTISEMENT and is_potential_advertisement(
                 message.get_caption()
             ):
