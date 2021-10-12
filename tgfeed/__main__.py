@@ -63,9 +63,10 @@ async def forward_messages_to_channel(
     if config.REMOVE_FORWARDED_HEADER:
         transformed_messages = remove_message_headers(messages)
         for message in transformed_messages:
-            if config.IGNORE_ADVERTISEMENT and is_potential_advertisement(
-                message.get_caption()
-            ):
+            if (
+                config.IGNORE_ADVERTISEMENT
+                and is_potential_advertisement(message.get_caption())
+            ) or (config.IGNORE_NO_MEDIA and not message.has_media()):
                 continue
             await message.send(client, channel)
     else:

@@ -80,3 +80,5 @@ MARK_CHANNELS_AS_READ: bool = __get(
 IGNORE_ADVERTISEMENT: bool = __get(
     "IGNORE_ADVERTISEMENT", value_type=bool, default=False
 )
+# Ignore messages without media content (memes mode)
+IGNORE_NO_MEDIA: bool = __get("IGNORE_NO_MEDIA", value_type=bool, default=False)

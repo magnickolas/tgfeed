@@ -55,6 +55,7 @@ Tgfeed will create a private channel and periodically forward the new posts to i
 |    REMOVE_FORWARDED_HEADER | bool | Remove forwarded header from posts                                      |    -     |                    False                     |
 |      MARK_CHANNELS_AS_READ | bool | Mark channels as read after forwarding                                  |    -     |                     True                     |
 |       IGNORE_ADVERTISEMENT | bool | Ignore messages containing potential advertisement                      |    -     |                    False                     |
+|            IGNORE_NO_MEDIA | bool | Ignore messages without media content (meme mode)                       |    -     |                    False                     |
 
 
 [tg]: https://telegram.org/

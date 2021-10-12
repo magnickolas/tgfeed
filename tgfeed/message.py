@@ -16,6 +16,10 @@ class AbstractMessage(ABC):
     def get_caption(self) -> str:
         ...
 
+    @abstractmethod
+    def has_media(self) -> bool:
+        ...
+
 
 @dataclass
 class SimpleMessage(AbstractMessage):
@@ -25,7 +29,10 @@ class SimpleMessage(AbstractMessage):
         await client.send_message(entity, self.message)
 
     def get_caption(self) -> str:
-        return self.message.text
+        return self.message.text  # type: ignore
+
+    def has_media(self) -> bool:
+        return self.message.media is not None
 
 
 @dataclass
@@ -41,9 +48,12 @@ class GroupedMessage(AbstractMessage):
         caption = ""
         for msg in self.messages:
             if msg.message:
-                caption = msg.text
+                caption = msg.text  # type: ignore
                 break
         return caption
+
+    def has_media(self) -> bool:
+        return True
 
 
 def remove_message_headers(messages: list[Message]) -> list[AbstractMessage]:
