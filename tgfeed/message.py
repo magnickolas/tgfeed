@@ -4,7 +4,7 @@ from itertools import groupby
 
 from telethon import TelegramClient
 from telethon.hints import EntityLike
-from telethon.tl.types import Message
+from telethon.tl.types import Message, MessageMediaPoll
 
 
 class AbstractMessage(ABC):
@@ -26,7 +26,10 @@ class SimpleMessage(AbstractMessage):
     message: Message
 
     async def send(self, client: TelegramClient, entity: EntityLike):
-        await client.send_message(entity, self.message)
+        if isinstance(self.message.media, MessageMediaPoll):
+            await client.forward_messages(entity, self.message)
+        else:
+            await client.send_message(entity, self.message)
 
     def get_caption(self) -> str:
         return self.message.text  # type: ignore
