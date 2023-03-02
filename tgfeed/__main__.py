@@ -105,7 +105,9 @@ async def update_feeds(title_to_feed: dict[str, str]) -> None:
         subscribed_dialogs.append(dialog.input_entity)
     dialog_filter: TypeDialogFilter
     for dialog_filter in await client(GetDialogFiltersRequest()):
-        if dialog_filter.title.startswith(config.FOLDER_FEED_PREFIX):
+        if hasattr(dialog_filter, "title") and dialog_filter.title.startswith(
+            config.FOLDER_FEED_PREFIX
+        ):
             feed_title = dialog_filter.title.removeprefix(config.FOLDER_FEED_PREFIX)
             if feed_title not in title_to_feed:
                 feed = await create_feed(feed_title)
