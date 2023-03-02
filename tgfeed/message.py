@@ -28,7 +28,7 @@ class SimpleMessage(AbstractMessage):
     async def send(self, client: TelegramClient, entity: EntityLike):
         try:
             await client.send_message(entity, self.message)
-        except TypeError:  # Try to forward message if failed to send
+        except Exception:  # Try to forward message if failed to send
             await client.forward_messages(entity, self.message)
 
     def get_caption(self) -> str:
