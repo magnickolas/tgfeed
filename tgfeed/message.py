@@ -10,16 +10,13 @@ from telethon.tl.types import Message
 
 class AbstractMessage(ABC):
     @abstractmethod
-    async def send(self, client: TelegramClient, entity: EntityLike):
-        ...
+    async def send(self, client: TelegramClient, entity: EntityLike): ...
 
     @abstractmethod
-    def get_caption(self) -> str:
-        ...
+    def get_caption(self) -> str: ...
 
     @abstractmethod
-    def has_media(self) -> bool:
-        ...
+    def has_media(self) -> bool: ...
 
 
 @dataclass
@@ -30,15 +27,19 @@ class SimpleMessage(AbstractMessage):
         try:
             await client.send_message(entity, self.message)
         except Exception as e:
-            logger.debug(f"Failed to send message {self.message.id}, trying to forward: {e}")
+            logger.debug(
+                f"Failed to send message {self.message.id}, trying to forward: {e}"
+            )
             try:
                 await client.forward_messages(entity, self.message)
             except Exception as e:
-                logger.warning(f"Skipping message that can't be forwarded: {self.message.id} - {e}")
+                logger.warning(
+                    f"Skipping message that can't be forwarded: {self.message.id} - {e}"
+                )
                 return
 
     def get_caption(self) -> str:
-        return self.message.text  # type: ignore
+        return self.message.text
 
     def has_media(self) -> bool:
         return self.message.media is not None
@@ -62,7 +63,7 @@ class GroupedMessage(AbstractMessage):
         caption = ""
         for msg in self.messages:
             if msg.message:
-                caption = msg.text  # type: ignore
+                caption = msg.text
                 break
         return caption
 

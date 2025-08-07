@@ -4,7 +4,7 @@ from datetime import datetime
 from itertools import chain
 from pathlib import Path
 
-import jsonpickle
+import jsonpickle  # type: ignore[import-untyped]
 from loguru import logger
 from telethon import TelegramClient
 from telethon.tl.functions.channels import CreateChannelRequest, ReadHistoryRequest
@@ -31,10 +31,8 @@ async def create_feed(feed_title: str) -> Feed:
             if dialog.name == feed_title:
                 return Feed(tg_channel=dialog.entity)
     logger.info(f"creating a new feed channel '{feed_title}'")
-    create_channel_updates: Updates = await client(
-        CreateChannelRequest(feed_title, "")
-    )  # type: ignore
-    return Feed(tg_channel=create_channel_updates.chats[0])  # type: ignore
+    create_channel_updates: Updates = await client(CreateChannelRequest(feed_title, ""))
+    return Feed(tg_channel=create_channel_updates.chats[0])
 
 
 async def get_new_chat_messages(
@@ -53,7 +51,7 @@ async def get_new_chat_messages(
 
 
 async def mark_chat_as_read(peer: TypeInputPeer) -> None:
-    await client(ReadHistoryRequest(peer, 0))  # type: ignore
+    await client(ReadHistoryRequest(peer, 0))
 
 
 async def forward_messages_to_channel(
@@ -110,10 +108,12 @@ async def update_feeds(title_to_feed: dict[str, str]) -> None:
             config.FOLDER_FEED_PREFIX
         ):
             feed_title = dialog_filter.title.removeprefix(config.FOLDER_FEED_PREFIX)
+            feed: Feed
             if feed_title not in title_to_feed:
                 feed = await create_feed(feed_title)
-                title_to_feed[feed_title] = jsonpickle.encode(feed)  # type: ignore
-            feed: Feed = jsonpickle.decode(title_to_feed[feed_title])  # type: ignore
+                title_to_feed[feed_title] = jsonpickle.encode(feed)
+            else:
+                feed = jsonpickle.decode(title_to_feed[feed_title])
             channel = feed.tg_channel
             messages = []
             peer: TypeInputPeer
@@ -129,7 +129,7 @@ async def update_feeds(title_to_feed: dict[str, str]) -> None:
                     await mark_chat_as_read(peer)
             if config.IGNORE_DUPLICATE_POSTS:
                 messages = deduplicate_feed_messages(messages, feed)
-            title_to_feed[feed_title] = jsonpickle.encode(feed)  # type: ignore
+            title_to_feed[feed_title] = jsonpickle.encode(feed)
             await forward_messages_to_channel(messages, channel)
 
 

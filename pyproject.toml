@@ -20,11 +20,3 @@ dev = [
     "pre-commit<5.0.0,>=4.2.0",
     "removestar<2.0,>=1.5.2",
 ]
-
-[tool.isort]
-profile = "black"
-
-[tool.flake8]
-ignore = ["E203", "W503"]
-max-complexity = 25
-max-line-length = 88
