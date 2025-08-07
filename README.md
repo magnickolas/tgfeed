@@ -68,12 +68,15 @@ WantedBy=default.target
 
 ## Running from source
 
-1. Install [Poetry][poetry]
+1. Install [uv][uv]
 2. Install dependencies into a virtual environment:
    ```console
-   poetry install
+   uv sync
    ```
-3. Run the application same as in the previous section
+3. Run the application using:
+   ```console
+   uv run python -m tgfeed
+   ```
 
 ## Environment variables
 
@@ -94,4 +97,4 @@ WantedBy=default.target
 
 [tg]: https://telegram.org/
 [tg_api]: https://core.telegram.org/api/obtaining_api_id
-[poetry]: https://python-poetry.org/
+[uv]: https://docs.astral.sh/uv/
