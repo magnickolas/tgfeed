@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from itertools import groupby
 
+from loguru import logger
 from telethon import TelegramClient
 from telethon.hints import EntityLike
 from telethon.tl.types import Message
@@ -28,8 +29,13 @@ class SimpleMessage(AbstractMessage):
     async def send(self, client: TelegramClient, entity: EntityLike):
         try:
             await client.send_message(entity, self.message)
-        except Exception:  # Try to forward message if failed to send
-            await client.forward_messages(entity, self.message)
+        except Exception as e:
+            logger.debug(f"Failed to send message {self.message.id}, trying to forward: {e}")
+            try:
+                await client.forward_messages(entity, self.message)
+            except Exception as e:
+                logger.warning(f"Skipping message that can't be forwarded: {self.message.id} - {e}")
+                return
 
     def get_caption(self) -> str:
         return self.message.text  # type: ignore
@@ -43,9 +49,14 @@ class GroupedMessage(AbstractMessage):
     messages: list[Message] = field(default_factory=list)
 
     async def send(self, client: TelegramClient, entity: EntityLike):
-        await client.send_file(
-            entity, file=self.messages, caption=self.get_caption()  # type: ignore
-        )
+        try:
+            await client.send_file(
+                entity, file=self.messages, caption=self.get_caption()
+            )
+        except Exception as e:
+            message_ids = [msg.id for msg in self.messages]
+            logger.warning(f"Skipping grouped message {message_ids} due to error: {e}")
+            return
 
     def get_caption(self) -> str:
         caption = ""
