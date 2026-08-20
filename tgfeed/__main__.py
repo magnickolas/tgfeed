@@ -1,3 +1,4 @@
+import asyncio
 import json
 from asyncio import sleep
 from datetime import datetime
@@ -23,6 +24,8 @@ from tgfeed.message import remove_message_headers
 from tgfeed.scheme import ChatInfo, Feed
 from tgfeed.utils import open_atomic
 from tgfeed.validate import is_potential_advertisement
+
+client: TelegramClient
 
 
 async def create_feed(feed_title: str) -> Feed:
@@ -113,9 +116,9 @@ async def update_feeds(title_to_feed: dict[str, str]) -> None:
             feed: Feed
             if feed_title not in title_to_feed:
                 feed = await create_feed(feed_title)
-                title_to_feed[feed_title] = jsonpickle.encode(feed)
+                title_to_feed[feed_title] = jsonpickle.encode(feed, keys=True)
             else:
-                feed = jsonpickle.decode(title_to_feed[feed_title])
+                feed = jsonpickle.decode(title_to_feed[feed_title], keys=True)
             channel = feed.tg_channel
             messages = []
             peer: TypeInputPeer
@@ -131,7 +134,7 @@ async def update_feeds(title_to_feed: dict[str, str]) -> None:
                     await mark_chat_as_read(peer)
             if config.IGNORE_DUPLICATE_POSTS:
                 messages = deduplicate_feed_messages(messages, feed)
-            title_to_feed[feed_title] = jsonpickle.encode(feed)
+            title_to_feed[feed_title] = jsonpickle.encode(feed, keys=True)
             await forward_messages_to_channel(messages, channel)
 
 
@@ -153,9 +156,12 @@ async def main() -> None:
         await sleep(config.POLL_INTERVAL)
 
 
-if __name__ == "__main__":
+async def run() -> None:
+    global client
     client = TelegramClient("tgfeed", config.APP_ID, config.APP_HASH)
-    client.start()
+    async with client:
+        await main()
 
-    with client:
-        client.loop.run_until_complete(main())
+
+if __name__ == "__main__":
+    asyncio.run(run())

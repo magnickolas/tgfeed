@@ -16,7 +16,7 @@ and put all the channels to collect posts from in it.
 
 ### Install the application
 
-The app requires at least Python 3.9
+The app requires Python 3.14 or newer.
 
 ```console
 pip install tgfeed

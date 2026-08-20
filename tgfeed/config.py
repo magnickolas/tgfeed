@@ -15,13 +15,11 @@ def str_to_bool(x: str) -> bool:
 
 
 @overload
-def __get(name, *, value_type: Callable[[str], T], default: T) -> T:
-    ...
+def __get(name, *, value_type: Callable[[str], T], default: T) -> T: ...
 
 
 @overload
-def __get(name, *, value_type: Callable[[str], T], default=None) -> Optional[T]:
-    ...
+def __get(name, *, value_type: Callable[[str], T], default=None) -> Optional[T]: ...
 
 
 def __get(name, *, value_type, default=None):
