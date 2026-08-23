@@ -5,6 +5,7 @@ from itertools import groupby
 from loguru import logger
 from telethon import TelegramClient
 from telethon.hints import EntityLike
+from telethon.tl import types
 from telethon.tl.types import Message
 
 
@@ -28,6 +29,12 @@ class SimpleMessage(AbstractMessage):
     caption_modified: bool = field(default=False, init=False)
 
     async def send(self, client: TelegramClient, entity: EntityLike):
+        if (
+            isinstance(self.message.media, types.MessageMediaPoll)
+            and self.message.media.poll.quiz
+        ):
+            await self.send_quiz(client, entity, self.message.media)
+            return
         try:
             await client.send_message(entity, self.message)
         except Exception as e:
@@ -47,6 +54,44 @@ class SimpleMessage(AbstractMessage):
                     f"Skipping message that can't be forwarded: {self.message.id} - {e}"
                 )
                 return
+
+    async def send_quiz(
+        self,
+        client: TelegramClient,
+        entity: EntityLike,
+        media: types.MessageMediaPoll,
+    ) -> None:
+        correct_options = {
+            result.option for result in (media.results.results or []) if result.correct
+        }
+        correct_answers = [
+            index
+            for index, answer in enumerate(media.poll.answers)
+            if answer.option in correct_options
+        ]
+        if not correct_answers:
+            logger.warning(
+                f"Skipping quiz {self.message.id}: its correct answer is unavailable"
+            )
+            return
+        try:
+            await client.send_file(
+                entity,
+                types.InputMediaPoll(
+                    poll=media.poll,
+                    correct_answers=correct_answers,
+                    solution=media.results.solution,
+                    solution_entities=media.results.solution_entities,
+                ),
+                caption=self.message.message or "",
+                silent=self.message.silent,
+                formatting_entities=self.message.entities,
+                parse_mode=None,
+            )
+        except Exception as error:
+            logger.warning(
+                f"Skipping quiz {self.message.id} that can't be recreated: {error}"
+            )
 
     def get_caption(self) -> str:
         return self.message.text
