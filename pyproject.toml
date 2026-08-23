@@ -8,7 +8,7 @@ authors = [
 requires-python = ">=3.14"
 
 dependencies = [
-    "Telethon~=1.40.0",
+    "Telethon~=1.44.0",
     "appdirs<2.0.0,>=1.4.4",
     "loguru<0.8.0,>=0.7.3",
     "jsonpickle<5.0.0,>=4.1.1",
