@@ -16,17 +16,27 @@ class AbstractMessage(ABC):
     def get_caption(self) -> str: ...
 
     @abstractmethod
+    def set_caption(self, caption: str) -> None: ...
+
+    @abstractmethod
     def has_media(self) -> bool: ...
 
 
 @dataclass
 class SimpleMessage(AbstractMessage):
     message: Message
+    caption_modified: bool = field(default=False, init=False)
 
     async def send(self, client: TelegramClient, entity: EntityLike):
         try:
             await client.send_message(entity, self.message)
         except Exception as e:
+            if self.caption_modified:
+                logger.warning(
+                    "Skipping message that can't be sent with its replaced caption: "
+                    f"{self.message.id} - {e}"
+                )
+                return
             logger.debug(
                 f"Failed to send message {self.message.id}, trying to forward: {e}"
             )
@@ -40,6 +50,10 @@ class SimpleMessage(AbstractMessage):
 
     def get_caption(self) -> str:
         return self.message.text
+
+    def set_caption(self, caption: str) -> None:
+        self.message.text = caption
+        self.caption_modified = True
 
     def has_media(self) -> bool:
         return self.message.media is not None
@@ -66,6 +80,12 @@ class GroupedMessage(AbstractMessage):
                 caption = msg.text
                 break
         return caption
+
+    def set_caption(self, caption: str) -> None:
+        for msg in self.messages:
+            if msg.message:
+                msg.text = caption
+                break
 
     def has_media(self) -> bool:
         return True

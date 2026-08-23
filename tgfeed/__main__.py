@@ -23,7 +23,7 @@ from tgfeed import config
 from tgfeed.message import remove_message_headers
 from tgfeed.scheme import ChatInfo, Feed
 from tgfeed.utils import open_atomic
-from tgfeed.validate import is_potential_advertisement
+from tgfeed.validate import is_potential_advertisement, replace_regex
 
 client: TelegramClient
 
@@ -64,9 +64,16 @@ async def forward_messages_to_channel(
     if config.REMOVE_FORWARDED_HEADER:
         transformed_messages = remove_message_headers(messages)
         for message in transformed_messages:
+            caption = message.get_caption()
+            replaced_caption = replace_regex(
+                caption,
+                config.REGEX_REPLACEMENTS,
+            )
+            if replaced_caption != caption:
+                message.set_caption(replaced_caption)
             if (
                 config.IGNORE_ADVERTISEMENT
-                and is_potential_advertisement(message.get_caption())
+                and is_potential_advertisement(replaced_caption)
             ) or (config.IGNORE_NO_MEDIA and not message.has_media()):
                 continue
             await message.send(client, channel)

@@ -1,4 +1,7 @@
 import re
+from collections.abc import Iterable
+
+RegexReplacement = tuple[re.Pattern[str], str]
 
 # https://gist.github.com/gruber/8891611
 URL_REGEX = re.compile(
@@ -40,3 +43,9 @@ def is_potential_advertisement(text: str) -> bool:
             bool(URL_REGEX.search(text)),  # urls
         )
     )
+
+
+def replace_regex(text: str, replacements: Iterable[RegexReplacement]) -> str:
+    for pattern, replacement in replacements:
+        text = pattern.sub(replacement, text)
+    return text

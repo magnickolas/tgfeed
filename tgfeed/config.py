@@ -1,9 +1,12 @@
+import json
 import os
+import re
 from typing import Callable, Optional, TypeVar, overload
 
 from appdirs import user_data_dir
 
 T = TypeVar("T")
+RegexReplacement = tuple[re.Pattern[str], str]
 
 
 def str_to_bool(x: str) -> bool:
@@ -39,6 +42,33 @@ def __get_nonempty(name, *, value_type: Callable[[str], T]) -> T:
     if not res:
         raise ValueError(f"Argument {name} is empty")
     return res
+
+
+def parse_regex_replacements(value: str) -> tuple[RegexReplacement, ...]:
+    try:
+        pairs = json.loads(value)
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            "REGEX_REPLACEMENTS must be a JSON array of [pattern, replacement] pairs"
+        ) from error
+
+    if not isinstance(pairs, list):
+        raise ValueError(
+            "REGEX_REPLACEMENTS must be a JSON array of [pattern, replacement] pairs"
+        )
+
+    replacements = []
+    for pair in pairs:
+        if (
+            not isinstance(pair, list)
+            or len(pair) != 2
+            or not all(isinstance(value, str) for value in pair)
+        ):
+            raise ValueError(
+                "REGEX_REPLACEMENTS must contain [pattern, replacement] string pairs"
+            )
+        replacements.append((re.compile(pair[0]), pair[1]))
+    return tuple(replacements)
 
 
 # ---REQUIRED--- #
@@ -77,6 +107,12 @@ MARK_CHANNELS_AS_READ: bool = __get(
 # Ignore messages with potential advertisement
 IGNORE_ADVERTISEMENT: bool = __get(
     "IGNORE_ADVERTISEMENT", value_type=bool, default=False
+)
+# Apply these ordered regular-expression substitutions to post captions before sending
+# them. Requires
+# REMOVE_FORWARDED_HEADER because Telegram forwards cannot have their text edited.
+REGEX_REPLACEMENTS: tuple[RegexReplacement, ...] = __get(
+    "REGEX_REPLACEMENTS", value_type=parse_regex_replacements, default=()
 )
 # Ignore messages without media content (memes mode)
 IGNORE_NO_MEDIA: bool = __get("IGNORE_NO_MEDIA", value_type=bool, default=False)

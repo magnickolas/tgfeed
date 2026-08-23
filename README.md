@@ -93,6 +93,7 @@ WantedBy=default.target
 |    REMOVE_FORWARDED_HEADER | bool | Remove forwarded header from posts                                      |    -     |                    False                     |
 |      MARK_CHANNELS_AS_READ | bool | Mark channels as read after forwarding                                  |    -     |                     True                     |
 |       IGNORE_ADVERTISEMENT | bool | Ignore messages containing potential advertisement                      |    -     |                    False                     |
+|         REGEX_REPLACEMENTS | JSON | Ordered `[pattern, replacement]` pairs to apply to post captions        |    -     |                     []                       |
 |            IGNORE_NO_MEDIA | bool | Ignore messages without media content (meme mode)                       |    -     |                    False                     |
 
 [tg]: https://telegram.org/
