@@ -20,6 +20,9 @@ class AbstractMessage(ABC):
     def set_caption(self, caption: str) -> None: ...
 
     @abstractmethod
+    def get_advertisement_text(self) -> str: ...
+
+    @abstractmethod
     def has_media(self) -> bool: ...
 
 
@@ -94,11 +97,14 @@ class SimpleMessage(AbstractMessage):
             )
 
     def get_caption(self) -> str:
-        return self.message.text
+        return self.message.message or ""
 
     def set_caption(self, caption: str) -> None:
         self.message.text = caption
         self.caption_modified = True
+
+    def get_advertisement_text(self) -> str:
+        return "\n".join((self.get_caption(), *_get_button_urls(self.message)))
 
     def has_media(self) -> bool:
         return self.message.media is not None
@@ -122,7 +128,7 @@ class GroupedMessage(AbstractMessage):
         caption = ""
         for msg in self.messages:
             if msg.message:
-                caption = msg.text
+                caption = msg.message
                 break
         return caption
 
@@ -132,8 +138,26 @@ class GroupedMessage(AbstractMessage):
                 msg.text = caption
                 break
 
+    def get_advertisement_text(self) -> str:
+        button_urls = [
+            url for message in self.messages for url in _get_button_urls(message)
+        ]
+        return "\n".join((self.get_caption(), *button_urls))
+
     def has_media(self) -> bool:
         return True
+
+
+def _get_button_urls(message: Message) -> list[str]:
+    reply_markup = message.reply_markup
+    if reply_markup is None:
+        return []
+    return [
+        button.url
+        for row in reply_markup.rows
+        for button in row.buttons
+        if isinstance(getattr(button, "url", None), str)
+    ]
 
 
 def remove_message_headers(messages: list[Message]) -> list[AbstractMessage]:

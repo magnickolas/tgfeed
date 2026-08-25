@@ -73,7 +73,7 @@ async def forward_messages_to_channel(
                 message.set_caption(replaced_caption)
             if (
                 config.IGNORE_ADVERTISEMENT
-                and is_potential_advertisement(replaced_caption)
+                and is_potential_advertisement(message.get_advertisement_text())
             ) or (config.IGNORE_NO_MEDIA and not message.has_media()):
                 continue
             await message.send(client, channel)
