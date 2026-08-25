@@ -104,7 +104,13 @@ class SimpleMessage(AbstractMessage):
         self.caption_modified = True
 
     def get_advertisement_text(self) -> str:
-        return "\n".join((self.get_caption(), *_get_button_urls(self.message)))
+        return "\n".join(
+            (
+                self.get_caption(),
+                *_get_text_url_entities(self.message),
+                *_get_button_urls(self.message),
+            )
+        )
 
     def has_media(self) -> bool:
         return self.message.media is not None
@@ -139,10 +145,15 @@ class GroupedMessage(AbstractMessage):
                 break
 
     def get_advertisement_text(self) -> str:
-        button_urls = [
-            url for message in self.messages for url in _get_button_urls(message)
+        linked_urls = [
+            url
+            for message in self.messages
+            for url in (
+                *_get_text_url_entities(message),
+                *_get_button_urls(message),
+            )
         ]
-        return "\n".join((self.get_caption(), *button_urls))
+        return "\n".join((self.get_caption(), *linked_urls))
 
     def has_media(self) -> bool:
         return True
@@ -157,6 +168,14 @@ def _get_button_urls(message: Message) -> list[str]:
         for row in reply_markup.rows
         for button in row.buttons
         if isinstance(getattr(button, "url", None), str)
+    ]
+
+
+def _get_text_url_entities(message: Message) -> list[str]:
+    return [
+        entity.url
+        for entity in message.entities or []
+        if isinstance(entity, types.MessageEntityTextUrl)
     ]
 
 
